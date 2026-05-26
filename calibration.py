@@ -46,8 +46,8 @@ def get_board_corners(img_pth: str) -> npt.NDArray[np.float32]:
     return np.array(corner_points, dtype=np.float32)
 
 
-def apply_homography(image: npt.NDArray[np.uint8],
-                     src_pts: npt.NDArray[np.float32]) -> npt.NDArray[np.uint8]:
+def get_homography_matrix(image: npt.NDArray[np.uint8],
+                     src_pts: npt.NDArray[np.float32]) -> Tuple[npt.NDArray[np.float64], int, int]:
     """
     Takes an image and the 4 clicked points, then returns the flattened 2D view.
     """
@@ -70,9 +70,8 @@ def apply_homography(image: npt.NDArray[np.uint8],
     ], dtype=np.float32)
 
     matrix = cv2.getPerspectiveTransform(rect, dst_pts)
-    warped_image = cv2.warpPerspective(image, matrix, (max_width, max_height))
 
-    return warped_image
+    return matrix, max_width, max_height
 
 
 def order_points(pts: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
