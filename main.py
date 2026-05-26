@@ -1,8 +1,37 @@
 #!/usr/bin/env python3
 
 import cv2
+from itertools import groupby
 from calibration import get_board_corners
 from calibration import get_homography_matrix
+
+def sort_lawnmower_path(targets):
+    if not targets:
+        return []
+
+    # 1. Sort primarily by Y (top to bottom), secondarily by X (left to right)
+    targets.sort(key=lambda coord: (coord[1], coord[0]))
+    
+    final_path = []
+    sweep_left_to_right = True
+    
+    # 2. Group the targets by their Y coordinate (each group is one horizontal row)
+    for y_value, row_group in groupby(targets, key=lambda coord: coord[1]):
+        
+        # Convert the group iterator to a list
+        current_row = list(row_group)
+        
+        # 3. If we are sweeping right-to-left on this pass, reverse the row's X order
+        if not sweep_left_to_right:
+            current_row.reverse()
+            
+        # Add this row to our final path
+        final_path.extend(current_row)
+        
+        # 4. Flip the sweep direction for the next row down
+        sweep_left_to_right = not sweep_left_to_right
+        
+    return final_path
 
 
 if __name__ == "__main__":
@@ -77,7 +106,37 @@ if __name__ == "__main__":
                 # Draw a small blue dot at the center waypoint
                 cv2.circle(warped_image, (cell_center_x, cell_center_y), 3, (255, 0, 0), -1)
         
-    #cv2.imshow("Whiteboard Tracker", warped_image)
+    path = sort_lawnmower_path(grid_targets)
+    print(path)
+
+    for i in range(len(path)):
+        current_pt = path[i]
+        
+        # A. Number the Target
+        # We offset the text slightly (e.g., +5 pixels) so it doesn't cover your blue dot
+        text_pos = (current_pt[0] + 5, current_pt[1] - 5)
+        cv2.putText(
+            warped_image, 
+            str(i),           # The index number (0, 1, 2...)
+            text_pos, 
+            cv2.FONT_HERSHEY_SIMPLEX, 
+            0.4,              # Font scale
+            (255, 0, 0),      # Blue text
+            1                 # Thickness
+        )
+        
+        # B. Connect the Dots
+        # If we are not on the very last point, draw a line to the next point
+        if i < len(path) - 1:
+            next_pt = path[i + 1]
+            cv2.line(
+                warped_image, 
+                current_pt, 
+                next_pt, 
+                (0, 255, 0),  # Green line
+                2             # Thickness
+            )
+
     cv2.imshow("Display", warped_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
