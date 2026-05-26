@@ -17,10 +17,21 @@ if __name__ == "__main__":
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
     parameters = cv2.aruco.DetectorParameters()
     detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-
     corners, ids, rejected = detector.detectMarkers(warped_image)
 
-        
+    if ids is not None:
+        cv2.aruco.drawDetectedMarkers(warped_image, corners, ids)
+
+        c = corners[0][0]
+        center_x = int((c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4)
+        center_y = int((c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4)
+
+        cv2.circle(warped_image, (center_x, center_y), 5, (0, 255, 0), -1)
+
+        robot_radius_pixels = 100
+
+    else:
+        print("No ArCuo marker found!")
 
     gray_img = cv2.cvtColor(warped_image, cv2.COLOR_BGR2GRAY)
 
@@ -33,32 +44,16 @@ if __name__ == "__main__":
         5   # C (Constant subtracted from the local mean)
     )
 
-    # Assuming only found 1 marker (ids == 0)
-    if ids is not None:
-        cv2.aruco.drawDetectedMarkers(warped_image, corners, ids)
-
-        c = corners[0][0]
-        center_x = int((c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4)
-        center_y = int((c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4)
-
-        cv2.circle(warped_image, (center_x, center_y), 5, (0, 255, 0), -1)
-
-        robot_radius_pixels = 100
-        cv2.circle(ink_mask, (center_x, center_y), robot_radius_pixels, 0, -1)
-
-    else:
-        print("No ArCuo marker found!")
+    # filter out robot
+    cv2.circle(ink_mask, (center_x, center_y), robot_radius_pixels, 0, -1)
 
     # clean noise
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     clean_mask = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel)
 
     cell_size = 60
-
-    pixel_threshold = 20
-
+    pixel_threshold = 15
     grid_targets = []
-
     h, w = clean_mask.shape
 
     for y in range(0, h, cell_size):
