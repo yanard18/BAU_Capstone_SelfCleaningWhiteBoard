@@ -88,34 +88,48 @@ def debug_path(img, path, show_numbers=True, connect_dots=True):
             cv2.line(img, current_pt, path[i + 1], (0, 255, 0), 2)
 
 
-def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
-                 cfg: dict) -> dict:
-    warped_img = cv2.warpPerspective(image, matrix, (width, height))
+def get_robot(
+        img: np.ndarray,
+        debug: bool = True
+) -> tuple[tuple[int, int], tuple[np.ndarray, ...]]:
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
     detector = cv2.aruco.ArucoDetector(aruco_dict, cv2.aruco.DetectorParameters())
-    corners, ids, _ = detector.detectMarkers(warped_img)
+    corners, ids, _ = detector.detectMarkers(img)
 
-    center = None
-    if ids is not None:
-        if cfg.get('show_aruco', True):
-            cv2.aruco.drawDetectedMarkers(warped_img, corners, ids)
-        c = corners[0][0]
-        center = (
-            int((c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4),
-            int((c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4),
-        )
-    else:
-        print("No ArUco marker found!")
+    if ids is None:
+        raise Exception("No ArUco marker found!")
 
+    elif len(ids) > 1:
+        raise Exception("Multiple ArUco markers found!")
+
+    if debug:
+        cv2.aruco.drawDetectedMarkers(img, corners, ids)
+        
+    c = corners[0][0]
+    robot_pos = (
+        int((c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4),
+        int((c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4),
+    )
+
+    return robot_pos, corners
+
+
+def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
+                 cfg: dict) -> dict:
+
+    warped_img = cv2.warpPerspective(image, matrix, (width, height))
+
+    robot_pos, robot_corners = get_robot(warped_img, cfg.get('show_aruco'))
+        
     gray_img = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
     ink_mask = cv2.adaptiveThreshold(
         gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
         cfg['adaptive_block_size'], cfg['adaptive_c']
     )
 
-    if center is not None:
-        cv2.circle(ink_mask, center, cfg['robot_mask_radius'], 0, -1)
+    if robot_pos is not None:
+        cv2.circle(ink_mask, robot_pos, cfg['robot_mask_radius'], 0, -1)
 
     grid_targets = apply_grid_detection(
         ink_mask,
@@ -130,8 +144,8 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
                show_numbers=cfg.get('show_path_numbers', True),
                connect_dots=cfg.get('show_path_lines', True))
 
-    if center is not None:
-        draw_robot_overlays(warped_img, corners, center, path,
+    if robot_pos is not None:
+        draw_robot_overlays(warped_img, robot_corners, robot_pos, path,
                             show_orientation=cfg.get('show_orientation', True),
                             show_direction=cfg.get('show_direction', True))
 
