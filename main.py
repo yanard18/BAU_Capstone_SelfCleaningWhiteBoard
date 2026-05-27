@@ -118,11 +118,11 @@ def get_robot(
 def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
                  cfg: dict) -> dict:
 
-    warped_img = cv2.warpPerspective(image, matrix, (width, height))
+    out_img = cv2.warpPerspective(image, matrix, (width, height))
 
-    robot_pos, robot_corners = get_robot(warped_img, cfg.get('show_aruco'))
+    robot_pos, robot_corners = get_robot(out_img, cfg.get('show_aruco'))
         
-    gray_img = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
+    gray_img = cv2.cvtColor(out_img, cv2.COLOR_BGR2GRAY)
     ink_mask = cv2.adaptiveThreshold(
         gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
         cfg['adaptive_block_size'], cfg['adaptive_c']
@@ -133,24 +133,24 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
 
     grid_targets = apply_grid_detection(
         ink_mask,
-        warped_img,
+        out_img,
         cfg['cell_size'],
         cfg['ink_pixel_threshold'],
         debug=cfg.get('show_grid', True),
     )
 
     path = sort_lawnmower_path(grid_targets)
-    debug_path(warped_img, path,
+    debug_path(out_img, path,
                show_numbers=cfg.get('show_path_numbers', True),
                connect_dots=cfg.get('show_path_lines', True))
 
     if robot_pos is not None:
-        draw_robot_overlays(warped_img, robot_corners, robot_pos, path,
+        draw_robot_overlays(out_img, robot_corners, robot_pos, path,
                             show_orientation=cfg.get('show_orientation', True),
                             show_direction=cfg.get('show_direction', True))
 
     return {
-        'output':   warped_img,
+        'output':   out_img,
         'ink_mask': ink_mask,
         'gray':     gray_img,
     }
