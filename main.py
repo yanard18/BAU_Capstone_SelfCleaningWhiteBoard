@@ -28,8 +28,14 @@ def sort_lawnmower_path(targets):
     return final_path
 
 
-def apply_grid_detection(img, warped_img, cell_size, pixel_threshold, debug_grids=True):
-    grid_targets = []
+def apply_grid_detection(
+        img: np.ndarray,
+        cell_size: int,
+        pixel_threshold: int,
+        debug: bool = True
+) -> list[tuple[int, int]]:
+
+    grid_targets: list[tuple[int, int]] = []
     h, w = img.shape
 
     for y in range(0, h, cell_size):
@@ -42,7 +48,7 @@ def apply_grid_detection(img, warped_img, cell_size, pixel_threshold, debug_grid
             if cv2.countNonZero(cell) >= pixel_threshold:
                 grid_targets.append((x + (x_end - x) // 2, y + (y_end - y) // 2))
 
-                if debug_grids:
+                if debug:
                     cv2.rectangle(warped_img, (x, y), (x_end, y_end), (0, 0, 255), 1)
 
     return grid_targets
@@ -114,9 +120,11 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
     ink_mask_clean = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel)
 
     grid_targets = apply_grid_detection(
-        ink_mask_clean, warped_img,
-        cfg['cell_size'], cfg['ink_pixel_threshold']
+        ink_mask_clean, 
+        cfg['cell_size'],
+        cfg['ink_pixel_threshold']
     )
+
     path = sort_lawnmower_path(grid_targets)
     debug_path(warped_img, path)
 
