@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Board Calibration</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: sans-serif;
+            background: #111;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            gap: 16px;
+        }
+
+        h1 { font-size: 1.4rem; }
+
+        p.hint { color: #888; font-size: 0.9rem; }
+
+        canvas {
+            cursor: crosshair;
+            border: 2px solid #333;
+            max-width: 90vw;
+            max-height: 70vh;
+        }
+
+        #controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        #reset-btn { background: #444; color: #eee; }
+        #reset-btn:hover { background: #555; }
+
+        #submit-btn { background: #2563eb; color: #fff; }
+        #submit-btn:hover:not(:disabled) { background: #1d4ed8; }
+        #submit-btn:disabled { background: #1e3a6e; color: #555; cursor: not-allowed; }
+
+        #status { font-size: 0.9rem; color: #aaa; min-height: 1.2em; }
+
+        #result-img {
+            max-width: 90vw;
+            border: 2px solid #333;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Board Calibration</h1>
+    <p class="hint">Click the 4 corners of the board. Order doesn't matter — the system sorts them automatically.</p>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="controls">
+        <button id="reset-btn">Reset</button>
+        <button id="submit-btn" disabled>Submit (0 / 4)</button>
+    </div>
+
+    <p id="status">Click on the board corners...</p>
+
+    <img id="result-img" alt="Pipeline result" />
+
+    <script>
+        const canvas    = document.getElementById('canvas');
+        const ctx       = canvas.getContext('2d');
+        const submitBtn = document.getElementById('submit-btn');
+        const resetBtn  = document.getElementById('reset-btn');
+        const statusEl  = document.getElementById('status');
+        const resultImg = document.getElementById('result-img');
+
+        let points = [];
+
+        // Load the board image onto the canvas at its native resolution.
+        // The canvas is then CSS-scaled to fit the viewport; click coordinates
+        // are scaled back up to native pixels before being sent to the server.
+        const boardImage = new Image();
+        boardImage.src = '/image';
+        boardImage.onload = () => {
+            canvas.width  = boardImage.naturalWidth;
+            canvas.height = boardImage.naturalHeight;
+            ctx.drawImage(boardImage, 0, 0);
+        };
+
+        function redraw() {
+            ctx.drawImage(boardImage, 0, 0);
+
+            points.forEach((pt, i) => {
+                // red dot
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 10, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // number label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillText(i + 1, pt.x + 14, pt.y + 6);
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (points.length >= 4) return;
+
+            // getBoundingClientRect gives the CSS-pixel size of the canvas element.
+            // Dividing native canvas dimensions by that gives the scale factors.
+            const rect   = canvas.getBoundingClientRect();
+            const scaleX = canvas.width  / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            points.push({
+                x: Math.round((e.clientX - rect.left) * scaleX),
+                y: Math.round((e.clientY - rect.top)  * scaleY),
+            });
+
+            redraw();
+
+            const n = points.length;
+            submitBtn.textContent = `Submit (${n} / 4)`;
+            submitBtn.disabled    = n < 4;
+            statusEl.textContent  = n < 4
+                ? `${4 - n} corner(s) remaining...`
+                : 'All 4 corners selected. Hit Submit.';
+        });
+
+        resetBtn.addEventListener('click', () => {
+            points = [];
+            resultImg.style.display = 'none';
+            submitBtn.textContent   = 'Submit (0 / 4)';
+            submitBtn.disabled      = true;
+            statusEl.textContent    = 'Click on the board corners...';
+            ctx.drawImage(boardImage, 0, 0);
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            statusEl.textContent = 'Processing...';
+            submitBtn.disabled   = true;
+
+            try {
+                const response = await fetch('/calibrate/points', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ points }),
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    statusEl.textContent = `Error: ${err.error}`;
+                    submitBtn.disabled   = false;
+                    return;
+                }
+
+                // The server returns the processed image directly as PNG bytes.
+                // We create a local object URL so the browser can display it.
+                const blob       = await response.blob();
+                resultImg.src    = URL.createObjectURL(blob);
+                resultImg.style.display = 'block';
+                statusEl.textContent    = 'Done! Result shown below.';
+
+            } catch (err) {
+                statusEl.textContent = `Request failed: ${err.message}`;
+                submitBtn.disabled   = false;
+            }
+        });
+    </script>
+</body>
+</html>

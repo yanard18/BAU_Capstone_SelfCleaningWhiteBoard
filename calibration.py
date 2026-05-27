@@ -45,13 +45,13 @@ def get_board_corners(img_pth: str) -> npt.NDArray[np.float32]:
     return np.array(corner_points, dtype=np.float32)
 
 
-def get_homography_matrix(src_pts: npt.NDArray[np.float32]) -> Tuple[npt.NDArray[np.float64], int, int]:
+def get_homography_matrix(points: npt.NDArray[np.float32]) -> Tuple[npt.NDArray[np.float64], int, int]:
 
-    rect = order_points(src_pts)
+    rect = order_points(points)
     (tl, tr, br, bl) = rect
 
-    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
-    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    widthA = np.linalg.norm(br - bl)
+    widthB = np.linalg.norm(tr - tl)
     max_width = max(int(widthA), int(widthB))
     
     heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
