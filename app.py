@@ -42,10 +42,13 @@ def set_config():
         if key not in _config:
             return jsonify({'error': f'Unknown field: {key}'}), 400
         field = _config[key]
-        value = int(round(float(raw)))
-        if key in _ODD_FIELDS and value % 2 == 0:
-            value += 1
-        _config[key]['value'] = max(field['min'], min(field['max'], value))
+        if field['type'] == 'bool':
+            _config[key]['value'] = bool(raw)
+        else:
+            value = int(round(float(raw)))
+            if key in _ODD_FIELDS and value % 2 == 0:
+                value += 1
+            _config[key]['value'] = max(field['min'], min(field['max'], value))
     return jsonify(_config)
 
 
@@ -66,7 +69,6 @@ def _generate_stream(view):
         if view == 'raw':
             img = frame
         else:
-            # Re-read config on every frame so slider changes take effect immediately.
             result = run_pipeline(frame, _matrix, _width, _height, _config_values())
             img = result[view]
         _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])

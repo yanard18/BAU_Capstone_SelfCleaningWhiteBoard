@@ -55,34 +55,34 @@ def apply_grid_detection(
     return grid_targets
 
 
-def draw_robot_overlays(img, corners, center, path):
+def draw_robot_overlays(img, corners, center, path,
+                        show_orientation=True, show_direction=True):
     c = corners[0][0]  # (4, 2) float32 — TL, TR, BR, BL
 
-    # Orientation arrow (yellow): center → midpoint of the top edge.
-    # The top edge (c[0]→c[1]) is the marker's "forward" direction.
-    mid_top  = ((c[0][0] + c[1][0]) / 2, (c[0][1] + c[1][1]) / 2)
-    marker_w = float(np.linalg.norm(c[1] - c[0]))  # top-edge length, used as arrow scale
-    dx, dy   = mid_top[0] - center[0], mid_top[1] - center[1]
-    dist     = np.hypot(dx, dy)
-    if dist > 0:
-        scale = marker_w / dist          # arrow extends one full marker-width from center
-        tip = (int(center[0] + dx * scale), int(center[1] + dy * scale))
-        cv2.arrowedLine(img, center, tip, (0, 255, 255), 2, tipLength=0.25)
+    if show_orientation:
+        mid_top  = ((c[0][0] + c[1][0]) / 2, (c[0][1] + c[1][1]) / 2)
+        marker_w = float(np.linalg.norm(c[1] - c[0]))
+        dx, dy   = mid_top[0] - center[0], mid_top[1] - center[1]
+        dist     = np.hypot(dx, dy)
+        if dist > 0:
+            scale = marker_w / dist
+            tip = (int(center[0] + dx * scale), int(center[1] + dy * scale))
+            cv2.arrowedLine(img, center, tip, (0, 255, 255), 2, tipLength=0.25)
 
-    # Direction arrow (cyan): center → first path target.
-    if path:
-        target   = path[0]
-        dist_to  = np.linalg.norm(np.array(target) - np.array(center))
-        if dist_to > 10:                 # skip if already on the target
+    if show_direction and path:
+        target  = path[0]
+        dist_to = np.linalg.norm(np.array(target) - np.array(center))
+        if dist_to > 10:
             cv2.arrowedLine(img, center, target, (255, 255, 0), 2, tipLength=0.05)
 
 
-def debug_path(img, path, connect_dots=True):
+def debug_path(img, path, show_numbers=True, connect_dots=True):
     for i in range(len(path)):
         current_pt = path[i]
 
-        cv2.putText(img, str(i), (current_pt[0] + 5, current_pt[1] - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
+        if show_numbers:
+            cv2.putText(img, str(i), (current_pt[0] + 5, current_pt[1] - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
 
         if connect_dots and i < len(path) - 1:
             cv2.line(img, current_pt, path[i + 1], (0, 255, 0), 2)
@@ -98,7 +98,8 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
 
     center = None
     if ids is not None:
-        cv2.aruco.drawDetectedMarkers(warped_img, corners, ids)
+        if cfg.get('show_aruco', True):
+            cv2.aruco.drawDetectedMarkers(warped_img, corners, ids)
         c = corners[0][0]
         center = (
             int((c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4),
@@ -117,17 +118,22 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
         cv2.circle(ink_mask, center, cfg['robot_mask_radius'], 0, -1)
 
     grid_targets = apply_grid_detection(
-        ink_mask, 
+        ink_mask,
         warped_img,
         cfg['cell_size'],
-        cfg['ink_pixel_threshold']
+        cfg['ink_pixel_threshold'],
+        debug=cfg.get('show_grid', True),
     )
 
     path = sort_lawnmower_path(grid_targets)
-    debug_path(warped_img, path)
+    debug_path(warped_img, path,
+               show_numbers=cfg.get('show_path_numbers', True),
+               connect_dots=cfg.get('show_path_lines', True))
 
     if center is not None:
-        draw_robot_overlays(warped_img, corners, center, path)
+        draw_robot_overlays(warped_img, corners, center, path,
+                            show_orientation=cfg.get('show_orientation', True),
+                            show_direction=cfg.get('show_direction', True))
 
     return {
         'output':   warped_img,
