@@ -43,17 +43,22 @@ def set_debug(name):
     return jsonify({'ok': True, 'flags': _debug_flags})
 
 
-@app.route('/stream')
-def stream():
+VIEWS = {'output', 'ink_mask'}
+
+
+@app.route('/stream/<view>')
+def stream(view):
     if _matrix is None:
         return jsonify({'error': 'Not calibrated'}), 400
-    return Response(_generate_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    if view not in VIEWS:
+        return jsonify({'error': f'Unknown view: {view}'}), 400
+    return Response(_generate_stream(view), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-def _generate_stream():
+def _generate_stream(view):
     for frame in frames():
         result = run_pipeline(frame, _matrix, _width, _height)
-        _, buffer = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        _, buffer = cv2.imencode('.jpg', result[view], [cv2.IMWRITE_JPEG_QUALITY, 85])
         yield (
             b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n'
@@ -89,7 +94,7 @@ def receive_points():
     image = cv2.imread(IMG_PATH)
     result = run_pipeline(image, _matrix, _width, _height)
 
-    _, buffer = cv2.imencode('.png', result)
+    _, buffer = cv2.imencode('.png', result['output'])
     return send_file(io.BytesIO(buffer), mimetype='image/png')
 
 

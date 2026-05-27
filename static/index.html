@@ -55,11 +55,14 @@
             <div class="card bg-base-200 shadow">
                 <div class="card-body p-4 gap-3">
                     <div class="flex items-center justify-between">
-                        <h2 class="font-semibold text-sm">Ink Mask</h2>
-                        <div class="badge badge-neutral badge-sm">Pending</div>
+                        <div role="tablist" class="tabs tabs-boxed tabs-xs">
+                            <button role="tab" class="tab tab-active" data-view="ink_mask">Ink Mask</button>
+                            <button role="tab" class="tab" data-view="output">Output</button>
+                        </div>
+                        <div class="badge badge-success badge-sm">● Live</div>
                     </div>
                     <div class="aspect-video bg-base-300 rounded overflow-hidden flex items-center justify-center">
-                        <span class="text-base-content/40 text-sm">Stream not yet available</span>
+                        <img id="right-feed" class="w-full h-full object-contain" src="" alt="Alternate view">
                     </div>
                 </div>
             </div>

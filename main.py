@@ -64,7 +64,7 @@ def debug_path(img, path, connect_dots: bool = True):
             cv2.line(img, current_pt, path[i + 1], (0, 255, 0), 2)
 
 
-def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int) -> np.ndarray:
+def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int) -> dict:
     warped_img = cv2.warpPerspective(image, matrix, (width, height))
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -97,7 +97,10 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int)
     path = sort_lawnmower_path(grid_targets)
     debug_path(warped_img, path)
 
-    return warped_img
+    return {
+        'output':   warped_img,
+        'ink_mask': ink_mask_clean,
+    }
 
 
 if __name__ == "__main__":
@@ -107,7 +110,7 @@ if __name__ == "__main__":
 
         for frame in frames():
             result = run_pipeline(frame, matrix, width, height)
-            cv2.imshow("Display", result)
+            cv2.imshow("Display", result['output'])
             if cv2.waitKey(1) == ord('q'):
                 break
 
