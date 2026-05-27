@@ -5,6 +5,21 @@ import numpy as np  # type: ignore
 import numpy.typing as npt  # type: ignore
 from typing import List, Tuple, Any
 
+# .npz (not .npy) because we save multiple arrays: matrix + dimensions.
+# np.savez packs them into one file; np.load gives them back by name.
+CALIBRATION_FILE = 'calibration.npz'
+
+
+def save_calibration(matrix: npt.NDArray[np.float64], width: int, height: int) -> None:
+    np.savez(CALIBRATION_FILE, matrix=matrix, size=np.array([width, height]))
+    print(f"Calibration saved to {CALIBRATION_FILE}")
+
+
+def load_calibration() -> Tuple[npt.NDArray[np.float64], int, int]:
+    data = np.load(CALIBRATION_FILE)
+    width, height = int(data['size'][0]), int(data['size'][1])
+    return data['matrix'], width, height
+
 
 def get_board_corners(img_pth: str) -> npt.NDArray[np.float32]:
     corner_points: List[Tuple[int, int]] = []

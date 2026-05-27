@@ -3,7 +3,7 @@
 import cv2
 import numpy as np
 from itertools import groupby
-from calibration import get_board_corners, get_homography_matrix
+from calibration import load_calibration
 
 
 def sort_lawnmower_path(targets):
@@ -63,8 +63,7 @@ def debug_path(img, path, connect_dots: bool = True):
             cv2.line(img, current_pt, path[i + 1], (0, 255, 0), 2)
 
 
-def run_pipeline(image: np.ndarray, src_pts: np.ndarray) -> np.ndarray:
-    matrix, width, height = get_homography_matrix(src_pts)
+def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int) -> np.ndarray:
     warped_img = cv2.warpPerspective(image, matrix, (width, height))
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -103,10 +102,14 @@ def run_pipeline(image: np.ndarray, src_pts: np.ndarray) -> np.ndarray:
 if __name__ == "__main__":
     img_path = './mock_data/mock6.png'
     image = cv2.imread(img_path)
-    src_pts = get_board_corners(img_path)
 
-    result = run_pipeline(image, src_pts)
+    try:
+        matrix, width, height = load_calibration()
+        print("Loaded saved calibration.")
+        result = run_pipeline(image, matrix, width, height)
 
-    cv2.imshow("Display", result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        cv2.imshow("Display", result)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    except FileNotFoundError:
+        print("No calibration matrix found. Starting interactive calibration...")
