@@ -6,15 +6,6 @@ from itertools import groupby
 from calibration import load_calibration
 from source import frames
 
-DEFAULT_CONFIG = {
-    'adaptive_block_size': 45,
-    'adaptive_c':          5,
-    'robot_mask_radius':   100,
-    'morph_kernel_size':   3,
-    'cell_size':           60,
-    'ink_pixel_threshold': 15,
-}
-
 
 def sort_lawnmower_path(targets):
     if not targets:
@@ -91,9 +82,7 @@ def debug_path(img, path, connect_dots=True):
 
 
 def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
-                 config: dict = None) -> dict:
-    cfg = config or DEFAULT_CONFIG
-
+                 cfg: dict) -> dict:
     warped_img = cv2.warpPerspective(image, matrix, (width, height))
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -139,19 +128,3 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
         'ink_mask': ink_mask_clean,
         'gray':     gray_img,
     }
-
-
-if __name__ == "__main__":
-    try:
-        matrix, width, height = load_calibration()
-        print("Loaded saved calibration.")
-
-        for frame in frames():
-            result = run_pipeline(frame, matrix, width, height)
-            cv2.imshow("Display", result['output'])
-            if cv2.waitKey(1) == ord('q'):
-                break
-
-        cv2.destroyAllWindows()
-    except FileNotFoundError:
-        print("No calibration matrix found. Starting interactive calibration...")
