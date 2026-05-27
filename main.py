@@ -30,6 +30,7 @@ def sort_lawnmower_path(targets):
 
 def apply_grid_detection(
         img: np.ndarray,
+        warped_img: np.ndarray,
         cell_size: int,
         pixel_threshold: int,
         debug: bool = True
@@ -115,12 +116,9 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
     if center is not None:
         cv2.circle(ink_mask, center, cfg['robot_mask_radius'], 0, -1)
 
-    k = cfg['morph_kernel_size']
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k, k))
-    ink_mask_clean = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel)
-
     grid_targets = apply_grid_detection(
-        ink_mask_clean, 
+        ink_mask, 
+        warped_img,
         cfg['cell_size'],
         cfg['ink_pixel_threshold']
     )
@@ -133,6 +131,6 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
 
     return {
         'output':   warped_img,
-        'ink_mask': ink_mask_clean,
+        'ink_mask': ink_mask,
         'gray':     gray_img,
     }

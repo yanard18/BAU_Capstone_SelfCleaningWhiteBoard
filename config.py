@@ -29,7 +29,7 @@ _config = {
 
 
 # Fields that must stay odd (OpenCV requirement).
-_ODD_FIELDS = {'adaptive_block_size', 'morph_kernel_size'}
+_ODD_FIELDS = {'adaptive_block_size'}
 
 
 def _config_values() -> dict:
