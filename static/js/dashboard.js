@@ -10,6 +10,7 @@ async function init() {
             document.getElementById('dashboard-view').classList.remove('hidden');
             document.getElementById('live-feed').src  = '/stream/output';
             document.getElementById('right-feed').src = '/stream/ink_mask';
+            await initConfig();
         } else {
             badge.className     = 'badge badge-error gap-1';
             badge.textContent   = '✗ Not Calibrated';

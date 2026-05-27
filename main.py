@@ -6,6 +6,15 @@ from itertools import groupby
 from calibration import load_calibration
 from source import frames
 
+DEFAULT_CONFIG = {
+    'adaptive_block_size': 45,
+    'adaptive_c':          5,
+    'robot_mask_radius':   100,
+    'morph_kernel_size':   3,
+    'cell_size':           60,
+    'ink_pixel_threshold': 15,
+}
+
 
 def sort_lawnmower_path(targets):
     if not targets:
@@ -28,9 +37,7 @@ def sort_lawnmower_path(targets):
     return final_path
 
 
-def apply_grid_detection(img, warped_img, debug_grids: bool = True):
-    cell_size = 60
-    pixel_threshold = 15
+def apply_grid_detection(img, warped_img, cell_size, pixel_threshold, debug_grids=True):
     grid_targets = []
     h, w = img.shape
 
@@ -40,12 +47,9 @@ def apply_grid_detection(img, warped_img, debug_grids: bool = True):
             x_end = min(x + cell_size, w)
 
             cell = img[y:y_end, x:x_end]
-            ink_pixel_count = cv2.countNonZero(cell)
 
-            if ink_pixel_count >= pixel_threshold:
-                cell_center_x = x + (x_end - x) // 2
-                cell_center_y = y + (y_end - y) // 2
-                grid_targets.append((cell_center_x, cell_center_y))
+            if cv2.countNonZero(cell) >= pixel_threshold:
+                grid_targets.append((x + (x_end - x) // 2, y + (y_end - y) // 2))
 
                 if debug_grids:
                     cv2.rectangle(warped_img, (x, y), (x_end, y_end), (0, 0, 255), 1)
@@ -53,7 +57,7 @@ def apply_grid_detection(img, warped_img, debug_grids: bool = True):
     return grid_targets
 
 
-def debug_path(img, path, connect_dots: bool = True):
+def debug_path(img, path, connect_dots=True):
     for i in range(len(path)):
         current_pt = path[i]
 
@@ -64,7 +68,10 @@ def debug_path(img, path, connect_dots: bool = True):
             cv2.line(img, current_pt, path[i + 1], (0, 255, 0), 2)
 
 
-def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int) -> dict:
+def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
+                 config: dict = None) -> dict:
+    cfg = config or DEFAULT_CONFIG
+
     warped_img = cv2.warpPerspective(image, matrix, (width, height))
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -84,16 +91,21 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int)
 
     gray_img = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
     ink_mask = cv2.adaptiveThreshold(
-        gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 45, 5
+        gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
+        cfg['adaptive_block_size'], cfg['adaptive_c']
     )
 
     if center is not None:
-        cv2.circle(ink_mask, center, 100, 0, -1)
+        cv2.circle(ink_mask, center, cfg['robot_mask_radius'], 0, -1)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    k = cfg['morph_kernel_size']
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k, k))
     ink_mask_clean = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel)
 
-    grid_targets = apply_grid_detection(ink_mask_clean, warped_img)
+    grid_targets = apply_grid_detection(
+        ink_mask_clean, warped_img,
+        cfg['cell_size'], cfg['ink_pixel_threshold']
+    )
     path = sort_lawnmower_path(grid_targets)
     debug_path(warped_img, path)
 
