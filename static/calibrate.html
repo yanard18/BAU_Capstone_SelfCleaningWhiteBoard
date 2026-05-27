@@ -1,181 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Board Calibration</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: sans-serif;
-            background: #111;
-            color: #eee;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 24px;
-            gap: 16px;
-        }
-
-        h1 { font-size: 1.4rem; }
-
-        p.hint { color: #888; font-size: 0.9rem; }
-
-        canvas {
-            cursor: crosshair;
-            border: 2px solid #333;
-            max-width: 90vw;
-            max-height: 70vh;
-        }
-
-        #controls {
-            display: flex;
-            gap: 12px;
-        }
-
-        button {
-            padding: 8px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-
-        #reset-btn { background: #444; color: #eee; }
-        #reset-btn:hover { background: #555; }
-
-        #submit-btn { background: #2563eb; color: #fff; }
-        #submit-btn:hover:not(:disabled) { background: #1d4ed8; }
-        #submit-btn:disabled { background: #1e3a6e; color: #555; cursor: not-allowed; }
-
-        #status { font-size: 0.9rem; color: #aaa; min-height: 1.2em; }
-
-        #result-img {
-            max-width: 90vw;
-            border: 2px solid #333;
-            display: none;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Calibration — Robot CV</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Board Calibration</h1>
-    <p class="hint">Click the 4 corners of the board. Order doesn't matter — the system sorts them automatically.</p>
+<body class="min-h-screen bg-base-100 flex flex-col">
 
-    <canvas id="canvas"></canvas>
+    <!-- Navbar -->
+    <nav class="navbar bg-base-200 border-b border-base-300 px-4">
+        <div class="flex-1">
+            <a href="/" class="btn btn-ghost btn-sm text-base-content/60">← Dashboard</a>
+        </div>
+        <div class="flex-none">
+            <span class="font-semibold">Board Calibration</span>
+        </div>
+        <div class="flex-1"></div>
+    </nav>
 
-    <div id="controls">
-        <button id="reset-btn">Reset</button>
-        <button id="submit-btn" disabled>Submit (0 / 4)</button>
-    </div>
+    <!-- Content -->
+    <main class="flex-1 flex flex-col items-center gap-4 p-6">
 
-    <p id="status">Click on the board corners...</p>
+        <p class="text-base-content/60 text-sm">
+            Click the 4 corners of the board. Order doesn't matter — the system sorts them automatically.
+        </p>
 
-    <img id="result-img" alt="Pipeline result" />
+        <canvas id="canvas"
+            class="border border-base-300 rounded cursor-crosshair"
+            style="max-width: 90vw; max-height: 65vh;">
+        </canvas>
 
-    <script>
-        const canvas    = document.getElementById('canvas');
-        const ctx       = canvas.getContext('2d');
-        const submitBtn = document.getElementById('submit-btn');
-        const resetBtn  = document.getElementById('reset-btn');
-        const statusEl  = document.getElementById('status');
-        const resultImg = document.getElementById('result-img');
+        <div class="flex gap-3">
+            <button id="reset-btn" class="btn btn-neutral btn-sm">Reset</button>
+            <button id="submit-btn" class="btn btn-primary btn-sm" disabled>Submit (0 / 4)</button>
+        </div>
 
-        let points = [];
+        <p id="status" class="text-sm text-base-content/60 min-h-5">Click on the board corners...</p>
 
-        // Load the board image onto the canvas at its native resolution.
-        // The canvas is then CSS-scaled to fit the viewport; click coordinates
-        // are scaled back up to native pixels before being sent to the server.
-        const boardImage = new Image();
-        boardImage.src = '/image';
-        boardImage.onload = () => {
-            canvas.width  = boardImage.naturalWidth;
-            canvas.height = boardImage.naturalHeight;
-            ctx.drawImage(boardImage, 0, 0);
-        };
+        <img id="result-img"
+            class="hidden rounded border border-base-300"
+            style="max-width: 90vw;"
+            alt="Pipeline result">
 
-        function redraw() {
-            ctx.drawImage(boardImage, 0, 0);
+        <a id="back-link" href="/" class="btn btn-success btn-sm hidden">← Back to Dashboard</a>
 
-            points.forEach((pt, i) => {
-                // red dot
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 10, 0, 2 * Math.PI);
-                ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
-                ctx.fill();
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+    </main>
 
-                // number label
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 18px sans-serif';
-                ctx.fillText(i + 1, pt.x + 14, pt.y + 6);
-            });
-        }
-
-        canvas.addEventListener('click', (e) => {
-            if (points.length >= 4) return;
-
-            // getBoundingClientRect gives the CSS-pixel size of the canvas element.
-            // Dividing native canvas dimensions by that gives the scale factors.
-            const rect   = canvas.getBoundingClientRect();
-            const scaleX = canvas.width  / rect.width;
-            const scaleY = canvas.height / rect.height;
-
-            points.push({
-                x: Math.round((e.clientX - rect.left) * scaleX),
-                y: Math.round((e.clientY - rect.top)  * scaleY),
-            });
-
-            redraw();
-
-            const n = points.length;
-            submitBtn.textContent = `Submit (${n} / 4)`;
-            submitBtn.disabled    = n < 4;
-            statusEl.textContent  = n < 4
-                ? `${4 - n} corner(s) remaining...`
-                : 'All 4 corners selected. Hit Submit.';
-        });
-
-        resetBtn.addEventListener('click', () => {
-            points = [];
-            resultImg.style.display = 'none';
-            submitBtn.textContent   = 'Submit (0 / 4)';
-            submitBtn.disabled      = true;
-            statusEl.textContent    = 'Click on the board corners...';
-            ctx.drawImage(boardImage, 0, 0);
-        });
-
-        submitBtn.addEventListener('click', async () => {
-            statusEl.textContent = 'Processing...';
-            submitBtn.disabled   = true;
-
-            try {
-                const response = await fetch('/calibrate/points', {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ points }),
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    statusEl.textContent = `Error: ${err.error}`;
-                    submitBtn.disabled   = false;
-                    return;
-                }
-
-                // The server returns the processed image directly as PNG bytes.
-                // We create a local object URL so the browser can display it.
-                const blob       = await response.blob();
-                resultImg.src    = URL.createObjectURL(blob);
-                resultImg.style.display = 'block';
-                statusEl.textContent    = 'Done! Result shown below.';
-
-            } catch (err) {
-                statusEl.textContent = `Request failed: ${err.message}`;
-                submitBtn.disabled   = false;
-            }
-        });
-    </script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/calibrate.js"></script>
 </body>
 </html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot CV Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-100 flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="navbar bg-base-200 border-b border-base-300 px-4">
+        <div class="flex-1">
+            <span class="text-lg font-bold tracking-tight">Robot CV Panel</span>
+        </div>
+        <div class="flex-none flex items-center gap-3">
+            <div id="calib-badge" class="badge badge-error gap-1">✗ Not Calibrated</div>
+            <a href="/calibrate" class="btn btn-sm btn-outline">Re-calibrate</a>
+        </div>
+    </nav>
+
+    <!-- Uncalibrated state -->
+    <div id="uncalibrated-view" class="hidden flex-1 flex flex-col items-center justify-center gap-6 p-8">
+        <div class="alert alert-warning max-w-lg shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+                <h3 class="font-bold">Camera not calibrated</h3>
+                <p class="text-sm opacity-80">Calibration is required before the system can process video.</p>
+            </div>
+        </div>
+        <a href="/calibrate" class="btn btn-primary btn-lg">Calibrate Now</a>
+    </div>
+
+    <!-- Dashboard state -->
+    <div id="dashboard-view" class="hidden flex-1 flex flex-col gap-4 p-4">
+
+        <!-- Video panels -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            <div class="card bg-base-200 shadow">
+                <div class="card-body p-4 gap-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-sm">Live Output</h2>
+                        <div class="badge badge-success badge-sm">● Live</div>
+                    </div>
+                    <div class="aspect-video bg-base-300 rounded overflow-hidden flex items-center justify-center">
+                        <img id="live-feed" class="w-full h-full object-contain" src="" alt="Live output">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-200 shadow">
+                <div class="card-body p-4 gap-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-sm">Ink Mask</h2>
+                        <div class="badge badge-neutral badge-sm">Pending</div>
+                    </div>
+                    <div class="aspect-video bg-base-300 rounded overflow-hidden flex items-center justify-center">
+                        <span class="text-base-content/40 text-sm">Stream not yet available</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Debug controls -->
+        <div class="card bg-base-200 shadow">
+            <div class="card-body p-4 gap-4">
+                <h2 class="font-semibold text-sm">Debug Overlays</h2>
+                <div class="flex flex-wrap gap-8">
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" class="toggle toggle-sm toggle-primary" data-debug="robot_detection" checked>
+                        <span class="label-text">Robot Detection</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" class="toggle toggle-sm toggle-primary" data-debug="grid_markers" checked>
+                        <span class="label-text">Grid Markers</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" class="toggle toggle-sm toggle-primary" data-debug="path_overlay" checked>
+                        <span class="label-text">Path Overlay</span>
+                    </label>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
