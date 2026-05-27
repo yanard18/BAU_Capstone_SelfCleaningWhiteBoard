@@ -30,7 +30,6 @@ def get_board_corners(img_pth: str) -> npt.NDArray[np.float32]:
         cv2.imshow("Calibration", image)
         key = cv2.waitKey(1) & 0xFF
 
-        # Break the loop when have 4 points
         if len(corner_points) == 4:
             print("4 points captured!")
             break
@@ -46,11 +45,8 @@ def get_board_corners(img_pth: str) -> npt.NDArray[np.float32]:
     return np.array(corner_points, dtype=np.float32)
 
 
-def get_homography_matrix(image: npt.NDArray[np.uint8],
-                     src_pts: npt.NDArray[np.float32]) -> Tuple[npt.NDArray[np.float64], int, int]:
-    """
-    Takes an image and the 4 clicked points, then returns the flattened 2D view.
-    """
+def get_homography_matrix(src_pts: npt.NDArray[np.float32]) -> Tuple[npt.NDArray[np.float64], int, int]:
+
     rect = order_points(src_pts)
     (tl, tr, br, bl) = rect
 

@@ -86,7 +86,7 @@ if __name__ == "__main__":
     src_pts = get_board_corners(img_path)
     image = cv2.imread(img_path)
 
-    (matrix, width, height) = get_homography_matrix(image, src_pts)
+    (matrix, width, height) = get_homography_matrix(src_pts)
     warped_img = cv2.warpPerspective(image, matrix, (width, height))
 
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
