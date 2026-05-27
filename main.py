@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from itertools import groupby
 from calibration import load_calibration
+from source import frames
 
 
 def sort_lawnmower_path(targets):
@@ -100,16 +101,16 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int)
 
 
 if __name__ == "__main__":
-    img_path = './mock_data/mock6.png'
-    image = cv2.imread(img_path)
-
     try:
         matrix, width, height = load_calibration()
         print("Loaded saved calibration.")
-        result = run_pipeline(image, matrix, width, height)
 
-        cv2.imshow("Display", result)
-        cv2.waitKey(0)
+        for frame in frames():
+            result = run_pipeline(frame, matrix, width, height)
+            cv2.imshow("Display", result)
+            if cv2.waitKey(1) == ord('q'):
+                break
+
         cv2.destroyAllWindows()
     except FileNotFoundError:
         print("No calibration matrix found. Starting interactive calibration...")
