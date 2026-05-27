@@ -112,6 +112,7 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
     return {
         'output':   warped_img,
         'ink_mask': ink_mask_clean,
+        'gray':     gray_img,
     }
 
 

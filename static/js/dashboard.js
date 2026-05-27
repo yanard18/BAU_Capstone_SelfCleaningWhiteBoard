@@ -8,8 +8,8 @@ async function init() {
             badge.textContent   = '● Calibrated';
             document.getElementById('uncalibrated-view').classList.add('hidden');
             document.getElementById('dashboard-view').classList.remove('hidden');
-            document.getElementById('live-feed').src  = '/stream/output';
-            document.getElementById('right-feed').src = '/stream/ink_mask';
+            document.getElementById('live-feed').src  = '/stream/raw';
+            document.getElementById('right-feed').src = '/stream/output';
             await initConfig();
         } else {
             badge.className     = 'badge badge-error gap-1';

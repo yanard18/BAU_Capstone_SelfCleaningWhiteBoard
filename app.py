@@ -98,7 +98,7 @@ def set_debug(name):
     return jsonify({'ok': True, 'flags': _debug_flags})
 
 
-VIEWS = {'output', 'ink_mask'}
+VIEWS = {'raw', 'output', 'ink_mask', 'gray'}
 
 
 @app.route('/stream/<view>')
@@ -112,9 +112,13 @@ def stream(view):
 
 def _generate_stream(view):
     for frame in frames():
-        # Re-read config on every frame so slider changes take effect immediately.
-        result = run_pipeline(frame, _matrix, _width, _height, _config_values())
-        _, buffer = cv2.imencode('.jpg', result[view], [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if view == 'raw':
+            img = frame
+        else:
+            # Re-read config on every frame so slider changes take effect immediately.
+            result = run_pipeline(frame, _matrix, _width, _height, _config_values())
+            img = result[view]
+        _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
         yield (
             b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n'

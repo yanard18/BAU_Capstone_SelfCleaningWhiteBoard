@@ -70,11 +70,11 @@
                 <div class="card bg-base-200 shadow">
                     <div class="card-body p-4 gap-3">
                         <div class="flex items-center justify-between">
-                            <h2 class="font-semibold text-sm">Live Output</h2>
+                            <h2 class="font-semibold text-sm">Raw Input</h2>
                             <div class="badge badge-success badge-sm">● Live</div>
                         </div>
                         <div class="aspect-video bg-base-300 rounded overflow-hidden flex items-center justify-center">
-                            <img id="live-feed" class="w-full h-full object-contain" src="" alt="Live output">
+                            <img id="live-feed" class="w-full h-full object-contain" src="" alt="Raw input">
                         </div>
                     </div>
                 </div>
@@ -83,13 +83,14 @@
                     <div class="card-body p-4 gap-3">
                         <div class="flex items-center justify-between">
                             <div role="tablist" class="tabs tabs-boxed tabs-xs">
-                                <button role="tab" class="tab tab-active" data-view="ink_mask">Ink Mask</button>
-                                <button role="tab" class="tab" data-view="output">Output</button>
+                                <button role="tab" class="tab tab-active" data-view="output">Output</button>
+                                <button role="tab" class="tab" data-view="gray">Grayscale</button>
+                                <button role="tab" class="tab" data-view="ink_mask">Ink Mask</button>
                             </div>
                             <div class="badge badge-success badge-sm">● Live</div>
                         </div>
                         <div class="aspect-video bg-base-300 rounded overflow-hidden flex items-center justify-center">
-                            <img id="right-feed" class="w-full h-full object-contain" src="" alt="Alternate view">
+                            <img id="right-feed" class="w-full h-full object-contain" src="" alt="Processed view">
                         </div>
                     </div>
                 </div>
