@@ -32,19 +32,4 @@ document.querySelectorAll('[data-view]').forEach(tab => {
     });
 });
 
-// Each toggle sends its new state to the server.
-// On failure the toggle is reverted so the UI stays in sync with reality.
-document.querySelectorAll('[data-debug]').forEach(toggle => {
-    toggle.addEventListener('change', async (e) => {
-        const name    = e.target.dataset.debug;
-        const enabled = e.target.checked;
-        try {
-            await api.post(`/debug/${name}`, { enabled });
-        } catch (err) {
-            e.target.checked = !enabled;
-            console.error(`Failed to set debug flag "${name}":`, err);
-        }
-    });
-});
-
 init();

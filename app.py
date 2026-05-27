@@ -19,12 +19,6 @@ except FileNotFoundError:
     _matrix, _width, _height = None, None, None
     print("No calibration file found. Visit /calibrate to calibrate.")
 
-_debug_flags = {
-    'robot_detection': True,
-    'grid_markers':    True,
-    'path_overlay':    True,
-}
-
 
 @app.route('/')
 def index():
@@ -53,14 +47,6 @@ def set_config():
             value += 1
         _config[key]['value'] = max(field['min'], min(field['max'], value))
     return jsonify(_config)
-
-
-@app.route('/debug/<name>', methods=['POST'])
-def set_debug(name):
-    if name not in _debug_flags:
-        return jsonify({'error': f'Unknown debug flag: {name}'}), 400
-    _debug_flags[name] = bool(request.get_json().get('enabled', False))
-    return jsonify({'ok': True, 'flags': _debug_flags})
 
 
 VIEWS = {'raw', 'output', 'ink_mask', 'gray'}
