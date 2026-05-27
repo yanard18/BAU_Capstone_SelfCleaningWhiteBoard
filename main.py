@@ -57,6 +57,28 @@ def apply_grid_detection(img, warped_img, cell_size, pixel_threshold, debug_grid
     return grid_targets
 
 
+def draw_robot_overlays(img, corners, center, path):
+    c = corners[0][0]  # (4, 2) float32 — TL, TR, BR, BL
+
+    # Orientation arrow (yellow): center → midpoint of the top edge.
+    # The top edge (c[0]→c[1]) is the marker's "forward" direction.
+    mid_top  = ((c[0][0] + c[1][0]) / 2, (c[0][1] + c[1][1]) / 2)
+    marker_w = float(np.linalg.norm(c[1] - c[0]))  # top-edge length, used as arrow scale
+    dx, dy   = mid_top[0] - center[0], mid_top[1] - center[1]
+    dist     = np.hypot(dx, dy)
+    if dist > 0:
+        scale = marker_w / dist          # arrow extends one full marker-width from center
+        tip = (int(center[0] + dx * scale), int(center[1] + dy * scale))
+        cv2.arrowedLine(img, center, tip, (0, 255, 255), 2, tipLength=0.25)
+
+    # Direction arrow (cyan): center → first path target.
+    if path:
+        target   = path[0]
+        dist_to  = np.linalg.norm(np.array(target) - np.array(center))
+        if dist_to > 10:                 # skip if already on the target
+            cv2.arrowedLine(img, center, target, (255, 255, 0), 2, tipLength=0.05)
+
+
 def debug_path(img, path, connect_dots=True):
     for i in range(len(path)):
         current_pt = path[i]
@@ -108,6 +130,9 @@ def run_pipeline(image: np.ndarray, matrix: np.ndarray, width: int, height: int,
     )
     path = sort_lawnmower_path(grid_targets)
     debug_path(warped_img, path)
+
+    if center is not None:
+        draw_robot_overlays(warped_img, corners, center, path)
 
     return {
         'output':   warped_img,
